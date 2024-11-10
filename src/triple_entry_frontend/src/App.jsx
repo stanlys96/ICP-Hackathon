@@ -35,7 +35,6 @@ function App() {
 
       // At this point we're authenticated, and we can get the identity from the auth client:
       const identity = authClient.getIdentity();
-      console.log(identity, "<<< IDENTITY");
       // Using the identity obtained from the auth client, we can create an agent to interact with the IC.
       const agent = new HttpAgent({ identity });
       // Using the interface description of our webapp, we create an actor that we use to call the service methods.
@@ -44,9 +43,7 @@ function App() {
         canisterId: "bd3sg-teaaa-aaaaa-qaaba-cai",
       });
       // Call whoami which returns the principal (user id) of the current user.
-      console.log(webapp, "<<< WEB APP");
       const principal = await webapp.whoami();
-      console.log(principal, "<<< PRINCIPAL!!!");
       setLoginStatus(principal.toText());
     } catch (e) {
       console.log(e, "<<< ERROR");
