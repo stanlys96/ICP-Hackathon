@@ -16,6 +16,8 @@
     "src/triple_entry_frontend"
   ],
   "dependencies": {
-    "@dfinity/auth-client": "^2.1.3"
+    "@dfinity/agent": "^2.1.3",
+    "@dfinity/auth-client": "^2.1.3",
+    "@dfinity/principal": "^2.1.3"
   }
 }
