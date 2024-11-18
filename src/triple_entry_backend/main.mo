@@ -1,3 +1,7 @@
+import Principal "mo:base/Principal";
+
+import Model "./model";
+
 actor {
   public shared (msg) func whoami() : async Principal {
     msg.caller
