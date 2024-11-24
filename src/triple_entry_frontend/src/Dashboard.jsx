@@ -6,7 +6,7 @@ import { Modal } from "antd";
 function Dashboard() {
   const [mode, setMode] = useState("dashboard");
   const [isModalOpen, setIsModalOpen] = useState(false);
-
+  const [theRole, setTheRole] = useState("");
   const [islog, setIslog] = useState("");
   const navigate = useNavigate();
 
@@ -30,6 +30,13 @@ function Dashboard() {
       if (await authClient.isAuthenticated()) {
         setIslog(authClient.getIdentity().getPrincipal().toText());
       }
+      IC.getBackend(async (result) => {
+        const getRole = await result.getUserRole(
+          authClient.getIdentity().getPrincipal()
+        );
+        const theRealRole = Object.keys(getRole?.[0])?.[0];
+        setTheRole(theRealRole);
+      });
     });
   }, []);
 
@@ -56,6 +63,7 @@ function Dashboard() {
             Your Petty Cash Summary
           </p>
           <p className="text-white text-center margin-bot">Identity: {islog}</p>
+          <p className="text-white text-center margin-bot">Role: {theRole}</p>
           <button
             onClick={async () => {
               setMode("transaction");
