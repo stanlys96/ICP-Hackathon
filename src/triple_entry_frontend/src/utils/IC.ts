@@ -23,6 +23,14 @@ class IC {
     }
   }
 
+  public static async whoami() {
+    return await this.backend.whoami();
+  }
+
+  public static async greetShared() {
+    return await this.backend.greetShared();
+  }
+
   public static async getAuth(
     run?: (self: AuthClient) => any
   ): Promise<AuthClient> {
@@ -32,6 +40,10 @@ class IC {
 
     run && (await run(this.authClient));
     return this.authClient as AuthClient;
+  }
+
+  public static async logout() {
+    return await this.authClient.logout();
   }
 
   public static async getBackend(
@@ -46,7 +58,7 @@ class IC {
   }
 
   public static defaultAuthOption: AuthClientLoginOptions = {
-    identityProvider: "http://bkyz2-fmaaa-aaaaa-qaaaq-cai.localhost:4943",
+    identityProvider: "http://asrmz-lmaaa-aaaaa-qaaeq-cai.localhost:4943",
     windowOpenerFeatures:
       "toolbar=0,location=0,menubar=0,width=500,height=500,left=100,top=100",
     maxTimeToLive: BigInt(7 * 24 * 60 * 60 * 1000 * 1000 * 1000),

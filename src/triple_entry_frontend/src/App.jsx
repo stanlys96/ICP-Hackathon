@@ -1,55 +1,17 @@
-import { useEffect, useState } from "react";
-import IC from "./utils/IC";
+import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
+import Home from "./Home";
+import Dashboard from "./Dashboard";
+import Role from "./Role";
 
 function App() {
-  const [islog, setIslog] = useState("");
-  const [greeting, setGreeting] = useState("");
-
-  useEffect(() => {
-    IC.getAuth(async (authClient) => {
-      if (await authClient.isAuthenticated()) {
-        setIslog(authClient.getIdentity().getPrincipal().toText());
-      }
-    });
-  }, []);
-
   return (
-    <main>
-      <img src="/logo2.svg" alt="DFINITY logo" />
-      <h1>Triple Entry Cash</h1>
-      <p>Is log: {islog}</p>
-      <button
-        onClick={() => {
-          IC.getBackend(async (be) => setGreeting(await be.greetShared()));
-        }}
-      >
-        greet
-      </button>
-      <p>{greeting}</p>
-      <button
-        onClick={() => {
-          IC.getAuth(async (authClient) => {
-            authClient.logout();
-          });
-        }}
-      >
-        Logout
-      </button>
-      <button
-        onClick={() => {
-          IC.getAuth(async (authClient) => {
-            authClient.login({
-              ...IC.defaultAuthOption,
-              onSuccess: () => {
-                setIslog(authClient.getIdentity().getPrincipal().toText());
-              },
-            });
-          });
-        }}
-      >
-        Login
-      </button>
-    </main>
+    <Router>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/role" element={<Role />} />
+      </Routes>
+    </Router>
   );
 }
 

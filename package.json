@@ -18,6 +18,9 @@
   "dependencies": {
     "@dfinity/agent": "^2.1.3",
     "@dfinity/auth-client": "^2.1.3",
-    "@dfinity/principal": "^2.1.3"
+    "@dfinity/principal": "^2.1.3",
+    "antd": "^5.22.2",
+    "react-router-dom": "^7.0.1",
+    "react-spinners": "^0.14.1"
   }
 }
