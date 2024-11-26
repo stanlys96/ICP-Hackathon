@@ -1,16 +1,25 @@
 import { useEffect, useState } from "react";
 import IC from "./utils/IC";
 import { useNavigate } from "react-router-dom";
-import { Modal, Select } from "antd";
+import { Modal } from "antd";
+import ClipLoader from "react-spinners/ClipLoader";
+import BeatLoader from "react-spinners/BeatLoader";
+import Swal from "sweetalert2";
 
 function Dashboard() {
+  const numberStrings = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
   const [mode, setMode] = useState("dashboard");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [theRole, setTheRole] = useState("");
   const [islog, setIslog] = useState("");
+  const [currentPrincipal, setCurrentPrincipal] = useState();
   const [principals, setPrincipals] = useState([]);
+  const [amount, setAmount] = useState("");
+  const [description, setDescription] = useState("");
+  const [destination, setDestination] = useState();
+  const [transactionLoading, setTransactionLoading] = useState(false);
   const navigate = useNavigate();
-
   const showModal = () => {
     setIsModalOpen(true);
   };
@@ -27,36 +36,48 @@ function Dashboard() {
   };
 
   useEffect(() => {
+    setLoading(true);
     IC.getAuth(async (authClient) => {
       if (await authClient.isAuthenticated()) {
         setIslog(authClient.getIdentity().getPrincipal().toText());
+        setCurrentPrincipal(authClient.getIdentity().getPrincipal());
       }
       IC.getBackend(async (result) => {
-        result.recordPrincipal(authClient.getIdentity().getPrincipal());
+        await result.recordPrincipal(authClient.getIdentity().getPrincipal());
         const getRole = await result.getUserRole(
           authClient.getIdentity().getPrincipal()
         );
         const getPrincipals = await result.getAllPrincipals();
+        const uniqueData = getPrincipals.filter(
+          (item, index, self) =>
+              self.findIndex(other => other?.toText() === item?.toText()) === index
+        );
         const principalsWithRoles = await Promise.all(
-          getPrincipals?.map(async (principal) => ({
+          uniqueData?.map(async (principal) => ({
             principal: principal,
             principalText: principal?.toText(),
-            role: Object.keys((await result.getUserRole(principal))?.[0])?.[0],
+            role: Object.keys((await result.getUserRole(principal))?.[0] ?? {})?.[0],
           }))
         );
         setPrincipals(principalsWithRoles);
-        const theRealRole = Object.keys(getRole?.[0])?.[0];
+        const theRealRole = Object.keys(getRole?.[0] ?? {})?.[0];
         setTheRole(theRealRole);
+        const transactions = await result.getTransactions();
+        console.log(transactions, "<<< TRANSACTIONS")
+        setLoading(false);
       });
     });
   }, []);
-  console.log(principals, "<< PRINCIPALS");
-  useEffect(() => {
-    if (islog) {
-    }
-  }, [islog]);
+
   return (
     <main className="the-body">
+      {loading ? <ClipLoader
+          color={"#FFFFFF"}
+          loading={loading}
+          size={50}
+          aria-label="Loading Spinner"
+          data-testid="loader"
+        /> : <div>
       {mode === "dashboard" && (
         <div className="container">
           <button
@@ -102,41 +123,76 @@ function Dashboard() {
             </div>
             <div className="input-container">
               <label className="text-white">To Wallet Address</label>
-              <Select
-                className="inputy text-white"
-                placeholder="Pick Destination Wallet"
-              >
+              <select value={destination} onChange={(e) => setDestination(e.target.value)} className="inputy" id="dropdown" name="options">
+                <option>Select destination</option>
                 {principals?.map(
                   (principal) =>
-                    islog !== principal?.principal && (
-                      <Select.Option value={principal?.principal}>
-                        {principal?.principalText?.slice(0, 25) + "..."} -{" "}
-                        {principal?.role}
-                      </Select.Option>
+                    islog !== principal?.principalText && (
+                      <option value={principal?.principal}>{principal?.principalText?.slice(0, 25) + "..."} -{" "}{principal?.role}</option>
                     )
                 )}
-              </Select>
+              </select>
             </div>
             <div className="input-container">
               <label className="text-white">Amount</label>
-              <input className="inputy" />
+              <input value={amount} onChange={(e) => {
+                let currentValue = e.target.value;
+                const filteredValue = currentValue
+                  .split("")
+                  .filter((char) => numberStrings.includes(char))
+                  .join("");
+                setAmount(filteredValue);
+              }} className="inputy" />
             </div>
             <div className="input-container">
               <label className="text-white">Description</label>
-              <input className="inputy" />
+              <input value={description} onChange={(e) => setDescription(e.target.value)} className="inputy" />
             </div>
-            <div className="button-container">
+            {transactionLoading ? <div className="center-all">
+                <BeatLoader color={"#FFFFFF"} size={30} />
+              </div> : <div className="button-container">
               <button
                 onClick={() => setMode("dashboard")}
                 className="the-button"
               >
                 Cancel
               </button>
-              <button className="submit-button">Submit</button>
-            </div>
+              <button onClick={() => {
+                if (!destination || !amount || !description) {
+                  return Swal.fire({
+                    title: "Fill the values!",
+                    text: "Please fill in all the inputs!",
+                    icon: "info"
+                  });
+                }
+                if (parseInt(amount) === 0) {
+                  return Swal.fire({
+                    title: "Amount info!",
+                    text: "Amount cannot be zero!",
+                    icon: "info"                    
+                  })
+                }
+                setTransactionLoading(true);
+                IC.getBackend(async(result) => {
+                  const destinationPrincipal = principals?.find((thePrincipal) => thePrincipal?.principalText === destination)?.principal;
+                  const finalResult = await result.addTransaction(currentPrincipal, destinationPrincipal, parseInt(amount), description);
+                  console.log(finalResult, "<<< FINAL RESULT");
+                  setAmount("");
+                  setDescription("");
+                  setDestination("");
+                  setTransactionLoading(false);
+                  Swal.fire({
+                    title: "Success!",
+                    text: "Successfully created the transaction!",
+                    icon: "success"
+                  });
+                })
+              }} className="submit-button">Submit</button>
+            </div>}
           </div>
         </div>
       )}
+      </div>}
       <Modal
         title="Logout"
         open={isModalOpen}

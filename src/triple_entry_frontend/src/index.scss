@@ -242,3 +242,9 @@ button[type="submit"] {
 .ant-select-selection-placeholder {
   color: white !important;
 }
+
+.center-all {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}

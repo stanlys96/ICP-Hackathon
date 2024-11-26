@@ -10,6 +10,8 @@ function Role() {
   const [identity, setIdentity] = useState(null);
   const [loading, setLoading] = useState(false);
   const [confirmLoading, setConfirmLoading] = useState(false);
+  const [companyRolePicked, setCompanyRolePicked] = useState(false);
+  const [rolesData, setRolesData] = useState([]);
   const navigate = useNavigate();
 
   const handleChange = (event) => {
@@ -21,7 +23,14 @@ function Role() {
     IC.getAuth(async (authClient) => {
       if (await authClient.isAuthenticated()) {
         IC.getBackend().then(async (result) => {
-          result.recordPrincipal(authClient.getIdentity().getPrincipal());
+          const isCompanyRolePicked = await result.isCompanyRolePicked();
+          if (isCompanyRolePicked) {
+            setRolesData(["Accounting", "Staff"])
+          } else {
+            setRolesData(["Company", "Accounting", "Staff"])
+          }
+          setCompanyRolePicked(isCompanyRolePicked);
+          await result.recordPrincipal(authClient.getIdentity().getPrincipal());
           setWhoami(authClient.getIdentity().getPrincipal().toText());
           setIdentity(authClient.getIdentity().getPrincipal());
           const hasRole = await result.hasRole(
@@ -51,7 +60,7 @@ function Role() {
           <p className="text-white margin-bot">Identity: {whoami}</p>
           <p className="text-white">Choose your role:</p>
           <div className="radio-group">
-            {["Company", "Accounting", "Staff"].map((option) => (
+            {rolesData?.map((option) => (
               <label
                 key={option}
                 className={`radio-label ${

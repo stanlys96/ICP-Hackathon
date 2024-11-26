@@ -17,14 +17,12 @@ actor {
   private stable var transactions : [Transaction] = [];
   private stable var principalEntries : [Principal] = [];
 
-  // Create HashMap to store principals
   private var principals = HashMap.HashMap<Principal, Bool>(
     10,
     Principal.equal,
     Principal.hash,
   );
 
-  // Check if principal is recorded
   public func isRecorded(user: Principal) : async Bool {
     switch (principals.get(user)) {
       case (?exists) { exists };
@@ -32,7 +30,6 @@ actor {
     };
   };
 
-  // Record a new principal
   public func recordPrincipal(user: Principal) : async Bool {
     if (Principal.isAnonymous(user)) {
       throw Error.reject("Anonymous principal not allowed");
@@ -62,6 +59,15 @@ actor {
     return true;
   };
 
+  public func isCompanyRolePicked() : async Bool {
+    for ((key, value) in userRoles.entries()) {
+      if (value == #Company) {
+        return true;
+      }
+    };
+    return false;
+  };
+
   public func hasRole(user : Principal) : async Bool {
     return userRoles.get(user) != null;
   };
@@ -74,7 +80,7 @@ actor {
     return userRoles.remove(user) != null;
   };
 
-  public func addTransaction(sender : Principal, receiver : Principal, value : Nat, purpose : Text) : async () {
+  public func addTransaction(sender : Principal, receiver : Principal, value : Nat, purpose : Text) : async Bool {
     let newTransaction : Transaction = {
       sender = sender;
       receiver = receiver;
@@ -82,6 +88,7 @@ actor {
       purpose = purpose;
     };
     transactions := Array.append(transactions, [newTransaction]);
+    return true;
   };
 
   public query func getTransactions() : async [Transaction] {
