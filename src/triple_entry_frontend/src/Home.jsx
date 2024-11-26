@@ -16,7 +16,13 @@ function Home() {
 
   useEffect(() => {
     if (islog) {
-      navigate("/role");
+      IC.getAuth(async (authClient) => {
+        IC.getBackend(async (backend) => {
+          backend.recordPrincipal(authClient.getIdentity().getPrincipal());
+          setIslog(authClient.getIdentity().getPrincipal().toText());
+          navigate("/role");
+        });
+      });
     }
   }, [islog]);
 
@@ -36,7 +42,12 @@ function Home() {
               authClient.login({
                 ...IC.defaultAuthOption,
                 onSuccess: () => {
-                  setIslog(authClient.getIdentity().getPrincipal().toText());
+                  IC.getBackend(async (backend) => {
+                    backend.recordPrincipal(
+                      authClient.getIdentity().getPrincipal()
+                    );
+                    setIslog(authClient.getIdentity().getPrincipal().toText());
+                  });
                 },
               });
             });

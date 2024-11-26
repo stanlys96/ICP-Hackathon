@@ -21,6 +21,7 @@ function Role() {
     IC.getAuth(async (authClient) => {
       if (await authClient.isAuthenticated()) {
         IC.getBackend().then(async (result) => {
+          result.recordPrincipal(authClient.getIdentity().getPrincipal());
           setWhoami(authClient.getIdentity().getPrincipal().toText());
           setIdentity(authClient.getIdentity().getPrincipal());
           const hasRole = await result.hasRole(

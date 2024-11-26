@@ -134,7 +134,9 @@ button[type="submit"] {
   background-color: #f0f0f0;
   border: 2px solid #ddd;
   border-radius: 50%;
-  transition: background-color 0.3s, border-color 0.3s;
+  transition:
+    background-color 0.3s,
+    border-color 0.3s;
 }
 
 .radio-label.selected .custom-radio {
@@ -190,6 +192,18 @@ button[type="submit"] {
   font-size: 16px;
 }
 
+.disabled-inputy {
+  outline: none;
+  background-color: #15191c;
+  border: 2px solid #7a9592;
+  border-radius: 20px;
+  height: 40px;
+  width: 500px;
+  padding: 0 20px;
+  color: gray;
+  font-size: 16px;
+}
+
 .input-master {
   display: flex;
   flex-direction: column;
@@ -201,4 +215,30 @@ button[type="submit"] {
   flex-direction: column;
   justify-content: start;
   gap: 10px;
+}
+
+.button-container {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  align-items: center;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.ant-select-selector {
+  border: none !important; /* Red border */
+  border-radius: 8px;
+  background-color: transparent !important; /* Light red background */
+  color: white !important;
+}
+
+.ant-select-item {
+  color: #0050b3; /* Dark blue text */
+}
+
+.ant-select-selection-placeholder {
+  color: white !important;
 }

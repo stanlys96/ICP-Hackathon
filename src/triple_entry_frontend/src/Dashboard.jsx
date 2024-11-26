@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import IC from "./utils/IC";
 import { useNavigate } from "react-router-dom";
-import { Modal } from "antd";
+import { Modal, Select } from "antd";
 
 function Dashboard() {
   const [mode, setMode] = useState("dashboard");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [theRole, setTheRole] = useState("");
   const [islog, setIslog] = useState("");
+  const [principals, setPrincipals] = useState([]);
   const navigate = useNavigate();
 
   const showModal = () => {
@@ -31,15 +32,25 @@ function Dashboard() {
         setIslog(authClient.getIdentity().getPrincipal().toText());
       }
       IC.getBackend(async (result) => {
+        result.recordPrincipal(authClient.getIdentity().getPrincipal());
         const getRole = await result.getUserRole(
           authClient.getIdentity().getPrincipal()
         );
+        const getPrincipals = await result.getAllPrincipals();
+        const principalsWithRoles = await Promise.all(
+          getPrincipals?.map(async (principal) => ({
+            principal: principal,
+            principalText: principal?.toText(),
+            role: Object.keys((await result.getUserRole(principal))?.[0])?.[0],
+          }))
+        );
+        setPrincipals(principalsWithRoles);
         const theRealRole = Object.keys(getRole?.[0])?.[0];
         setTheRole(theRealRole);
       });
     });
   }, []);
-
+  console.log(principals, "<< PRINCIPALS");
   useEffect(() => {
     if (islog) {
     }
@@ -76,14 +87,8 @@ function Dashboard() {
       )}
       {mode === "transaction" && (
         <div className="transaction">
-          <button
-            onClick={() => setMode("dashboard")}
-            className="the-button margin-bot"
-          >
-            Back
-          </button>
           <p className="text-white text-center margin-bot">Transaction</p>
-          <p className="text-white text-center margin-bot brown-color">
+          <p className="text-white text-center brown-color">
             Enter a Blockchain or Transaction/ Origin Walet Wallet address
           </p>
           <p className="text-white text-center margin-bot brown-color">
@@ -92,8 +97,25 @@ function Dashboard() {
           </p>
           <div className="input-master">
             <div className="input-container">
+              <label className="text-white">From Wallet Address</label>
+              <input value={islog} disabled className="disabled-inputy" />
+            </div>
+            <div className="input-container">
               <label className="text-white">To Wallet Address</label>
-              <input className="inputy" />
+              <Select
+                className="inputy text-white"
+                placeholder="Pick Destination Wallet"
+              >
+                {principals?.map(
+                  (principal) =>
+                    islog !== principal?.principal && (
+                      <Select.Option value={principal?.principal}>
+                        {principal?.principalText?.slice(0, 25) + "..."} -{" "}
+                        {principal?.role}
+                      </Select.Option>
+                    )
+                )}
+              </Select>
             </div>
             <div className="input-container">
               <label className="text-white">Amount</label>
@@ -103,7 +125,15 @@ function Dashboard() {
               <label className="text-white">Description</label>
               <input className="inputy" />
             </div>
-            <button className="submit-button">Submit</button>
+            <div className="button-container">
+              <button
+                onClick={() => setMode("dashboard")}
+                className="the-button"
+              >
+                Cancel
+              </button>
+              <button className="submit-button">Submit</button>
+            </div>
           </div>
         </div>
       )}
