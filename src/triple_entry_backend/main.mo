@@ -10,12 +10,15 @@ actor {
     receiver : Principal;
     value : Nat;
     purpose : Text;
+    counter : Nat;
+    timestamp: Text;
   };
 
   type Role = { #Company; #Accounting; #Staff };
   var userRoles : HashMap.HashMap<Principal, Role> = HashMap.HashMap<Principal, Role>(10, Principal.equal, Principal.hash);
   private stable var transactions : [Transaction] = [];
   private stable var principalEntries : [Principal] = [];
+  var counter : Nat = 0;
 
   private var principals = HashMap.HashMap<Principal, Bool>(
     10,
@@ -80,12 +83,15 @@ actor {
     return userRoles.remove(user) != null;
   };
 
-  public func addTransaction(sender : Principal, receiver : Principal, value : Nat, purpose : Text) : async Bool {
+  public func addTransaction(sender : Principal, receiver : Principal, value : Nat, purpose : Text, timestamp : Text) : async Bool {
+    counter += 1;
     let newTransaction : Transaction = {
       sender = sender;
       receiver = receiver;
       value = value;
       purpose = purpose;
+      timestamp = timestamp;
+      counter = counter;
     };
     transactions := Array.append(transactions, [newTransaction]);
     return true;

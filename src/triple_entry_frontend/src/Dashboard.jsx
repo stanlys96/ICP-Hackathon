@@ -1,10 +1,20 @@
 import { useEffect, useState } from "react";
 import IC from "./utils/IC";
 import { useNavigate } from "react-router-dom";
-import { Modal } from "antd";
+import { Modal, Table } from "antd";
 import ClipLoader from "react-spinners/ClipLoader";
 import BeatLoader from "react-spinners/BeatLoader";
 import Swal from "sweetalert2";
+import { DatePicker } from "antd";
+
+const { RangePicker } = DatePicker;
+
+function formatCurrency(value, currencyCode = "USD", locale = "en-US") {
+  return new Intl.NumberFormat(locale, {
+    style: "decimal",
+    currency: currencyCode,
+  }).format(value);
+}
 
 function Dashboard() {
   const numberStrings = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
@@ -19,11 +29,50 @@ function Dashboard() {
   const [description, setDescription] = useState("");
   const [destination, setDestination] = useState();
   const [transactionLoading, setTransactionLoading] = useState(false);
+  const [transactionsResult, setTransactionsResult] = useState([]);
+  const [dateRange, setDateRange] = useState([]);
+
+  const columns = [
+    {
+      title: "Transaction ID",
+      dataIndex: "counter",
+      key: "counter",
+      render: (counter) => counter.toString(),
+    },
+    {
+      title: "Sender",
+      dataIndex: "sender",
+      key: "sender",
+      render: (sender) => sender.toText().slice(0, 15) + "...",
+    },
+    {
+      title: "Receiver",
+      dataIndex: "receiver",
+      key: "receiver",
+      render: (receiver) => receiver.toText().slice(0, 15) + "...",
+    },
+    {
+      title: "Timestamp",
+      dataIndex: "timestamp",
+      key: "timestamp",
+    },
+    {
+      title: "Value",
+      dataIndex: "value",
+      key: "value",
+      render: (value) => `Rp ${formatCurrency(value.toString())}`,
+    },
+    {
+      title: "Description",
+      dataIndex: "purpose",
+      key: "purpose",
+    },
+  ];
+
   const navigate = useNavigate();
   const showModal = () => {
     setIsModalOpen(true);
   };
-
   const handleOk = () => {
     IC.getAuth(async (authClient) => {
       const result = await authClient.logout();
@@ -35,8 +84,26 @@ function Dashboard() {
     setIsModalOpen(false);
   };
 
+  const onOk = (value) => {
+    setDateRange(value);
+  };
+
+  function filterDataByTimestamp(data) {
+    if (dateRange.length > 1 && dateRange?.[0] && dateRange?.[1]) {
+      const [startDate, endDate] = dateRange.map((date) => new Date(date));
+
+      return data.filter((item) => {
+        const currentDate = new Date(item.timestamp);
+        return currentDate >= startDate && currentDate <= endDate;
+      });
+    } else {
+      return data;
+    }
+  }
+
   useEffect(() => {
     setLoading(true);
+
     IC.getAuth(async (authClient) => {
       if (await authClient.isAuthenticated()) {
         setIslog(authClient.getIdentity().getPrincipal().toText());
@@ -66,11 +133,11 @@ function Dashboard() {
         const theRealRole = Object.keys(getRole?.[0] ?? {})?.[0];
         setTheRole(theRealRole);
         const transactions = await result.getTransactions();
+        setTransactionsResult(transactions);
         setLoading(false);
       });
     });
   }, []);
-
   return (
     <main className="the-body">
       {loading ? (
@@ -105,14 +172,24 @@ function Dashboard() {
               <p className="text-white text-center margin-bot">
                 Role: {theRole}
               </p>
-              <button
-                onClick={async () => {
-                  setMode("transaction");
-                }}
-                className="submit-button margin-bot"
-              >
-                Add New Transaction
-              </button>
+              <div className="center-all gap-flex">
+                <button
+                  onClick={async () => {
+                    setMode("transaction-history");
+                  }}
+                  className="the-button margin-bot"
+                >
+                  Transaction History
+                </button>
+                <button
+                  onClick={async () => {
+                    setMode("transaction");
+                  }}
+                  className="submit-button margin-bot"
+                >
+                  Add New Transaction
+                </button>
+              </div>
             </div>
           )}
           {mode === "transaction" && (
@@ -208,11 +285,30 @@ function Dashboard() {
                             (thePrincipal) =>
                               thePrincipal?.principalText === destination
                           )?.principal;
+                          const now = new Date();
+                          const year = now.getFullYear();
+                          const month = String(now.getMonth() + 1).padStart(
+                            2,
+                            "0"
+                          );
+                          const date = String(now.getDate()).padStart(2, "0");
+                          const hours = String(now.getHours()).padStart(2, "0");
+                          const minutes = String(now.getMinutes()).padStart(
+                            2,
+                            "0"
+                          );
+                          const seconds = String(now.getSeconds()).padStart(
+                            2,
+                            "0"
+                          );
+
+                          const formattedDateTime = `${year}-${month}-${date} ${hours}:${minutes}:${seconds}`;
                           const finalResult = await result.addTransaction(
                             currentPrincipal,
                             destinationPrincipal,
                             parseInt(amount),
-                            description
+                            description,
+                            formattedDateTime
                           );
                           setAmount("");
                           setDescription("");
@@ -223,6 +319,8 @@ function Dashboard() {
                             text: "Successfully created the transaction!",
                             icon: "success",
                           });
+                          const transactions = await result.getTransactions();
+                          setTransactionsResult(transactions);
                         });
                       }}
                       className="submit-button"
@@ -232,6 +330,34 @@ function Dashboard() {
                   </div>
                 )}
               </div>
+            </div>
+          )}
+          {mode === "transaction-history" && (
+            <div className="table-container">
+              <p className="text-white margin-bot">Filter based on timestamp</p>
+              <RangePicker
+                showTime={{ format: "HH:mm" }}
+                format="YYYY-MM-DD HH:mm"
+                onChange={(value, dateString) => {
+                  console.log("Selected Time: ", value);
+                  console.log("Formatted Selected Time: ", dateString);
+                }}
+                className="range-picker"
+                onOk={onOk}
+              />
+              <Table
+                dataSource={filterDataByTimestamp(transactionsResult)}
+                columns={columns}
+              />
+              <button
+                onClick={() => {
+                  setMode("dashboard");
+                  setDateRange([]);
+                }}
+                className="the-button"
+              >
+                Back
+              </button>
             </div>
           )}
         </div>
