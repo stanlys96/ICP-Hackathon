@@ -31,7 +31,7 @@ function Dashboard() {
   const [transactionLoading, setTransactionLoading] = useState(false);
   const [transactionsResult, setTransactionsResult] = useState([]);
   const [dateRange, setDateRange] = useState([]);
-
+  const [currentICPPrice, setCurrentICPPrice] = useState(0);
   const columns = [
     {
       title: "Transaction ID",
@@ -105,6 +105,12 @@ function Dashboard() {
     setLoading(true);
 
     IC.getAuth(async (authClient) => {
+      fetch(
+        "https://api.coingecko.com/api/v3/coins/markets?vs_currency=idr&ids=internet-computer"
+      ).then(async (priceRes) => {
+        const theRes = await priceRes.json();
+        setCurrentICPPrice(theRes?.[0]?.current_price);
+      });
       if (await authClient.isAuthenticated()) {
         setIslog(authClient.getIdentity().getPrincipal().toText());
         setCurrentPrincipal(authClient.getIdentity().getPrincipal());
@@ -160,6 +166,9 @@ function Dashboard() {
               >
                 Logout
               </button>
+              <p className="text-white text-center margin-bot">
+                1 IDR = {formatCurrency(currentICPPrice?.toFixed(2))} ICP
+              </p>
               <p className="text-white text-center margin-bot">
                 Welcome to JASR Blockchain Dashboard
               </p>
