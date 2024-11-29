@@ -86,7 +86,7 @@ function Role() {
                 if (!selected) return;
                 setConfirmLoading(true);
                 IC.getBackend(async (result) => {
-                  const roleVariant = { [selected]: null };
+                  const roleVariant = selected;
                   const finalResult = await result.setUserRole(
                     identity,
                     roleVariant

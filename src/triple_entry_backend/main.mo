@@ -14,11 +14,11 @@ actor {
     timestamp: Text;
   };
 
-  type Role = { #Company; #Accounting; #Staff };
-  var userRoles : HashMap.HashMap<Principal, Role> = HashMap.HashMap<Principal, Role>(10, Principal.equal, Principal.hash);
+  var userRoles : HashMap.HashMap<Principal, Text> = HashMap.HashMap<Principal, Text>(10, Principal.equal, Principal.hash);
   private stable var transactions : [Transaction] = [];
   private stable var principalEntries : [Principal] = [];
   var counter : Nat = 0;
+  var balance: Int = 0;
 
   private var principals = HashMap.HashMap<Principal, Bool>(
     10,
@@ -57,14 +57,14 @@ actor {
     return "Hello, " # Principal.toText(msg.caller) # "!";
   };
 
-  public func setUserRole(user : Principal, role : Role) : async Bool {
+  public func setUserRole(user : Principal, role : Text) : async Bool {
     userRoles.put(user, role);
     return true;
   };
 
   public func isCompanyRolePicked() : async Bool {
     for ((key, value) in userRoles.entries()) {
-      if (value == #Company) {
+      if (value == "Company") {
         return true;
       }
     };
@@ -75,7 +75,7 @@ actor {
     return userRoles.get(user) != null;
   };
 
-  public func getUserRole(user : Principal) : async ?Role {
+  public func getUserRole(user : Principal) : async ?Text {
     return userRoles.get(user);
   };
 
@@ -84,6 +84,10 @@ actor {
   };
 
   public func addTransaction(sender : Principal, receiver : Principal, value : Nat, purpose : Text, timestamp : Text) : async Bool {
+    if (balance - value < 0) {
+      throw Error.reject("Insufficient balance!");
+    };
+    balance -= value;
     counter += 1;
     let newTransaction : Transaction = {
       sender = sender;
@@ -107,4 +111,17 @@ actor {
     };
     return null;
   };
+
+  public func addBalance(amount : Nat, user : Principal) : async Int {
+    if (userRoles.get(user) == ?"Company") {
+      balance += amount;
+      return balance;
+    } else {
+      throw Error.reject("Only the user with role \"Company\" can add balance!");
+    }
+  };
+
+  public query func getBalance() : async Int {
+    return balance;
+  }
 };
