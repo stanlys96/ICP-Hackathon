@@ -3,6 +3,7 @@ import IC from "./utils/IC";
 import { useNavigate } from "react-router-dom";
 import ClipLoader from "react-spinners/ClipLoader";
 import BeatLoader from "react-spinners/BeatLoader";
+import './index.scss';
 
 function Role() {
   const [selected, setSelected] = useState("");

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import IC from "./utils/IC";
 import { useNavigate } from "react-router-dom";
+import './index.scss';
 
 function Home() {
   const [islog, setIslog] = useState("");
