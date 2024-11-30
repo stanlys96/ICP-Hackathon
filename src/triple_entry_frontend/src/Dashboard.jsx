@@ -432,7 +432,7 @@ function Dashboard() {
                 </div>
               </div>
               <Table
-                className="w-full custom-table"
+                className="w-full custom-table pb-[40px]"
                 dataSource={filterBasedOnDays(transactionsResult)}
                 columns={columns}
                 style={{
@@ -443,7 +443,7 @@ function Dashboard() {
             </div>
           )}
           {mode === "transaction" && (
-            <div className="container">
+            <div className="container justify-start">
               <div className="flex justify-between items-center w-full mt-[15px]">
                 <p className="text-black text-[24px]">Transactions</p>
                 <div className="flex gap-x-2">
@@ -477,37 +477,6 @@ function Dashboard() {
                   borderTopRightRadius: 0,
                 }}
               />
-            </div>
-          )}
-          {mode === "transaction-history" && (
-            <div className="table-container">
-              <p className="text-white margin-bot">Filter based on timestamp</p>
-              <RangePicker
-                showTime={{ format: "HH:mm" }}
-                format="YYYY-MM-DD HH:mm"
-                onChange={(value, dateString) => {
-                  console.log("Selected Time: ", value);
-                  console.log("Formatted Selected Time: ", dateString);
-                }}
-                className="range-picker"
-                onOk={onOk}
-              />
-              <div className="w-full">
-                <p>Transactions History</p>
-              </div>
-              <Table
-                dataSource={filterBasedOnDays(transactionsResult)}
-                columns={columns}
-              />
-              <button
-                onClick={() => {
-                  setMode("dashboard");
-                  setDateRange([]);
-                }}
-                className="the-button"
-              >
-                Back
-              </button>
             </div>
           )}
         </div>

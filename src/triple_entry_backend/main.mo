@@ -133,4 +133,8 @@ actor {
   public query func getExpenses() : async Int {
     return expenses;
   };
+
+  public func resetTransaction() {
+    transactions := [];
+  };
 };
