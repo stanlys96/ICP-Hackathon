@@ -28,7 +28,7 @@ const Navbar = () => {
             <h2 onClick={() => scrollToSection("home")}>Triple Entry</h2>
         </div>
         <div className="navlink flex items-center gap-x-10 text-[10px] lg:text-[12px]">
-          <Link to={'/home'} className='cursor-pointer'><h5>HOME</h5></Link>
+          <div className='cursor-pointer' onClick={() => scrollToSection("home")}><h5>HOME</h5></div>
           <div className='cursor-pointer' onClick={() => scrollToSection("about")}><h5>ABOUT US</h5></div>
           <div className='cursor-pointer' onClick={() => scrollToSection("support")}><h5>SUPPORT</h5></div>
         </div>
@@ -49,8 +49,8 @@ const Hero = () => {
         <div className="title text-center z-[1] absolute left-0 right-0 top-[80px] md:top-[120px]">
           <h3 className="h3 font-bold">ICP Blockchain-Based <br /> Corporate Cash Management Revolution</h3>
           <p className='my-5'>Create financial efficiency and confidence in every transaction.</p>
-          <Link to={'/dashboard'}>
-            <button className='button text-[15px] px-5 py-3 bg-white text-black rounded'>go to dashboard</button>
+          <Link to={'/home'}>
+            <button className='button text-[15px] px-5 py-3 bg-white text-black rounded'>launch app</button>
           </Link>
         </div>
         <div className="baner flex items-center justify-center w-[90%] lg:w-[55%] bg-white z-[2] absolute left-1/2 transform -translate-x-1/2 top-[500px] sm:top-[450px] rounded-xl bg-gradient-to-br from-color-1 via-color-2 to-color-3">
