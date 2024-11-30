@@ -25,10 +25,10 @@ const Navbar = () => {
     <div className='navbar fixed left-0 right-0 top-0 z-[5] px-5 py-4 flex items-center justify-between border-b border-gray-700'>
         <div className="h5 logo flex items-center">
             <img src="" alt="" className='me-2' />
-            <h2>Triple Entry</h2>
+            <h2 onClick={() => scrollToSection("home")}>Triple Entry</h2>
         </div>
         <div className="navlink flex items-center gap-x-10 text-[10px] lg:text-[12px]">
-          <div className='cursor-pointer' onClick={() => scrollToSection("home")}><h5>HOME</h5></div>
+          <Link to={'/home'} className='cursor-pointer'><h5>HOME</h5></Link>
           <div className='cursor-pointer' onClick={() => scrollToSection("about")}><h5>ABOUT US</h5></div>
           <div className='cursor-pointer' onClick={() => scrollToSection("support")}><h5>SUPPORT</h5></div>
         </div>
