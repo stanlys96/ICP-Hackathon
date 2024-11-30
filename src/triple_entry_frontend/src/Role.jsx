@@ -25,9 +25,9 @@ function Role() {
         IC.getBackend().then(async (result) => {
           const isCompanyRolePicked = await result.isCompanyRolePicked();
           if (isCompanyRolePicked) {
-            setRolesData(["Accounting", "Staff"])
+            setRolesData(["Accounting", "Staff"]);
           } else {
-            setRolesData(["Company", "Accounting", "Staff"])
+            setRolesData(["Company", "Accounting", "Staff"]);
           }
           setCompanyRolePicked(isCompanyRolePicked);
           await result.recordPrincipal(authClient.getIdentity().getPrincipal());
