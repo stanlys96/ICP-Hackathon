@@ -22,7 +22,16 @@
     "types": [
       "node",
       "vite/client"
-    ]
+    ],
+    "baseUrl": "./",
+    "paths": {
+      "@components/*": [
+        "src/components/*"
+      ],
+      "@utils/*": [
+        "src/utils/*"
+      ]
+    }
   },
   "include": [
     "src"

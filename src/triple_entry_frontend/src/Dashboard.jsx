@@ -6,7 +6,7 @@ import ClipLoader from "react-spinners/ClipLoader";
 import BeatLoader from "react-spinners/BeatLoader";
 import Swal from "sweetalert2";
 import { DatePicker, Input, notification } from "antd";
-import './index.scss';
+import "./index.scss";
 
 const { RangePicker } = DatePicker;
 
