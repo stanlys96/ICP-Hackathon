@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import IC from "./utils/IC";
 import { useNavigate } from "react-router-dom";
 import { Modal, Table } from "antd";
 import ClipLoader from "react-spinners/ClipLoader";
 import BeatLoader from "react-spinners/BeatLoader";
 import Swal from "sweetalert2";
-import { DatePicker } from "antd";
+import { DatePicker, Input, notification } from "antd";
 
 const { RangePicker } = DatePicker;
 
@@ -20,6 +20,8 @@ function Dashboard() {
   const numberStrings = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
   const [mode, setMode] = useState("dashboard");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [openAddBalance, setOpenAddBalance] = useState(false);
+  const [confirmLoading, setConfirmLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [theRole, setTheRole] = useState("");
   const [islog, setIslog] = useState("");
@@ -32,6 +34,9 @@ function Dashboard() {
   const [transactionsResult, setTransactionsResult] = useState([]);
   const [dateRange, setDateRange] = useState([]);
   const [currentICPPrice, setCurrentICPPrice] = useState(0);
+  const [currentBalance, setCurrentBalance] = useState("");
+  const [addingBalance, setAddingBalance] = useState("");
+  const [showNotif, setShowNotif] = useState(false);
   const columns = [
     {
       title: "Transaction ID",
@@ -80,6 +85,51 @@ function Dashboard() {
     });
   };
 
+  const handleAddBalanceOk = () => {
+    try {
+      if (parseInt(addingBalance) <= 0) {
+        return Swal.fire({
+          title: "Error!",
+          text: "Amount must be more than 0!",
+          icon: "error",
+        })
+      }
+      setConfirmLoading(true);
+      IC.getBackend(async (result) => {
+        try {
+          const theBal = await result.addBalance(parseInt(addingBalance ?? "0"), currentPrincipal);
+          setCurrentBalance(theBal?.toString());
+          setAddingBalance("");
+          setOpenAddBalance(false);
+          setShowNotif(true);
+          setConfirmLoading(false);
+          setTimeout(() => {
+            setShowNotif(false);
+          }, 0);
+        } catch(e) {
+          Swal.fire({
+            title: "Error!",
+            text: "Error!",
+            icon: "error",
+          });
+          setConfirmLoading(false);
+        }
+      });
+    } catch(e) {
+      Swal.fire({
+        title: "Error!",
+        text: "Error!",
+        icon: "error",
+      });
+      setConfirmLoading(false);
+    }
+  };
+
+  const handleAddBalanceCancel = () => {
+    setOpenAddBalance(false);
+    setConfirmLoading(false);
+  }
+
   const handleCancel = () => {
     setIsModalOpen(false);
   };
@@ -103,14 +153,13 @@ function Dashboard() {
 
   useEffect(() => {
     setLoading(true);
-
+    fetch(
+      "https://api.coingecko.com/api/v3/coins/markets?vs_currency=idr&ids=internet-computer"
+    ).then(async (priceRes) => {
+      const theRes = await priceRes.json();
+      setCurrentICPPrice(theRes?.[0]?.current_price);
+    });
     IC.getAuth(async (authClient) => {
-      fetch(
-        "https://api.coingecko.com/api/v3/coins/markets?vs_currency=idr&ids=internet-computer"
-      ).then(async (priceRes) => {
-        const theRes = await priceRes.json();
-        setCurrentICPPrice(theRes?.[0]?.current_price);
-      });
       if (await authClient.isAuthenticated()) {
         setIslog(authClient.getIdentity().getPrincipal().toText());
         setCurrentPrincipal(authClient.getIdentity().getPrincipal());
@@ -120,6 +169,8 @@ function Dashboard() {
         const getRole = await result.getUserRole(
           authClient.getIdentity().getPrincipal()
         );
+        const theBalance = await result.getBalance();
+        setCurrentBalance(theBalance?.toString());
         const getPrincipals = await result.getAllPrincipals();
         const uniqueData = getPrincipals.filter(
           (item, index, self) =>
@@ -130,13 +181,11 @@ function Dashboard() {
           uniqueData?.map(async (principal) => ({
             principal: principal,
             principalText: principal?.toText(),
-            role: Object.keys(
-              (await result.getUserRole(principal))?.[0] ?? {}
-            )?.[0],
+            role: (await result.getUserRole(principal))?.[0],
           }))
         );
         setPrincipals(principalsWithRoles);
-        const theRealRole = Object.keys(getRole?.[0] ?? {})?.[0];
+        const theRealRole = getRole?.[0];
         setTheRole(theRealRole);
         const transactions = await result.getTransactions();
         setTransactionsResult(transactions);
@@ -144,6 +193,14 @@ function Dashboard() {
       });
     });
   }, []);
+  useEffect(() => {
+    if (showNotif) {
+      notification.success({
+        message: 'Success!',
+        description: 'You have successfully added your balance!',
+      });
+    }
+  }, [showNotif]);
   return (
     <main className="the-body">
       {loading ? (
@@ -166,8 +223,19 @@ function Dashboard() {
               >
                 Logout
               </button>
+              {theRole === "Company" && <button
+                onClick={async () => {
+                  setOpenAddBalance(true);
+                }}
+                className="submit-button margin-bot"
+              >
+                Add Balance
+              </button>}
               <p className="text-white text-center margin-bot">
-                1 IDR = {formatCurrency(currentICPPrice?.toFixed(2))} ICP
+                Total Balance = {formatCurrency(currentBalance ?? "0")} IDR
+              </p>
+              <p className="text-white text-center margin-bot">
+                1 ICP = {formatCurrency(currentICPPrice?.toFixed(2))} IDR
               </p>
               <p className="text-white text-center margin-bot">
                 Welcome to JASR Blockchain Dashboard
@@ -290,46 +358,57 @@ function Dashboard() {
                         }
                         setTransactionLoading(true);
                         IC.getBackend(async (result) => {
-                          const destinationPrincipal = principals?.find(
-                            (thePrincipal) =>
-                              thePrincipal?.principalText === destination
-                          )?.principal;
-                          const now = new Date();
-                          const year = now.getFullYear();
-                          const month = String(now.getMonth() + 1).padStart(
-                            2,
-                            "0"
-                          );
-                          const date = String(now.getDate()).padStart(2, "0");
-                          const hours = String(now.getHours()).padStart(2, "0");
-                          const minutes = String(now.getMinutes()).padStart(
-                            2,
-                            "0"
-                          );
-                          const seconds = String(now.getSeconds()).padStart(
-                            2,
-                            "0"
-                          );
-
-                          const formattedDateTime = `${year}-${month}-${date} ${hours}:${minutes}:${seconds}`;
-                          const finalResult = await result.addTransaction(
-                            currentPrincipal,
-                            destinationPrincipal,
-                            parseInt(amount),
-                            description,
-                            formattedDateTime
-                          );
-                          setAmount("");
-                          setDescription("");
-                          setDestination("");
-                          setTransactionLoading(false);
-                          Swal.fire({
-                            title: "Success!",
-                            text: "Successfully created the transaction!",
-                            icon: "success",
-                          });
-                          const transactions = await result.getTransactions();
-                          setTransactionsResult(transactions);
+                          try {
+                            const destinationPrincipal = principals?.find(
+                              (thePrincipal) =>
+                                thePrincipal?.principalText === destination
+                            )?.principal;
+                            const now = new Date();
+                            const year = now.getFullYear();
+                            const month = String(now.getMonth() + 1).padStart(
+                              2,
+                              "0"
+                            );
+                            const date = String(now.getDate()).padStart(2, "0");
+                            const hours = String(now.getHours()).padStart(2, "0");
+                            const minutes = String(now.getMinutes()).padStart(
+                              2,
+                              "0"
+                            );
+                            const seconds = String(now.getSeconds()).padStart(
+                              2,
+                              "0"
+                            );
+  
+                            const formattedDateTime = `${year}-${month}-${date} ${hours}:${minutes}:${seconds}`;
+                            const finalResult = await result.addTransaction(
+                              currentPrincipal,
+                              destinationPrincipal,
+                              parseInt(amount),
+                              description,
+                              formattedDateTime
+                            );
+                            setAmount("");
+                            setDescription("");
+                            setDestination("");
+                            setTransactionLoading(false);
+                            Swal.fire({
+                              title: "Success!",
+                              text: "Successfully created the transaction!",
+                              icon: "success",
+                            });
+                            const transactions = await result.getTransactions();
+                            setTransactionsResult(transactions);
+                            const theBalance = await result.getBalance();
+                            setCurrentBalance(theBalance?.toString());
+                          } catch(e) {
+                            Swal.fire({
+                              title: "Error!",
+                              text: "Insufficient balance!",
+                              icon: "error",
+                            });
+                            setTransactionLoading(false);
+                          }
                         });
                       }}
                       className="submit-button"
@@ -380,6 +459,21 @@ function Dashboard() {
         cancelText="No"
       >
         <p>Are you sure you want to logout?</p>
+      </Modal>
+      <Modal
+        title="Add Balance"
+        open={openAddBalance}
+        onOk={handleAddBalanceOk}
+        confirmLoading={confirmLoading}
+        onCancel={handleAddBalanceCancel}
+      >
+        <Input value={addingBalance} onChange={(e) => {
+          const filteredValue = e.target.value
+            .split("")
+            .filter((char) => numberStrings.includes(char))
+            .join("");
+          setAddingBalance(filteredValue);
+        }} placeholder="Input amount" />
       </Modal>
     </main>
   );
