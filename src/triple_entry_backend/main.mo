@@ -87,6 +87,9 @@ actor {
     if (balance - value < 0) {
       throw Error.reject("Insufficient balance!");
     };
+    if (Principal.toText(sender) == Principal.toText(receiver)) {
+      throw Error.reject("Sender and receiver cannot be the same!");
+    };
     balance -= value;
     counter += 1;
     let newTransaction : Transaction = {
