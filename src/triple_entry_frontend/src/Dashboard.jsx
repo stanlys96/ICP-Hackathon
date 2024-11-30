@@ -93,12 +93,15 @@ function Dashboard() {
           title: "Error!",
           text: "Amount must be more than 0!",
           icon: "error",
-        })
+        });
       }
       setConfirmLoading(true);
       IC.getBackend(async (result) => {
         try {
-          const theBal = await result.addBalance(parseInt(addingBalance ?? "0"), currentPrincipal);
+          const theBal = await result.addBalance(
+            parseInt(addingBalance ?? "0"),
+            currentPrincipal
+          );
           setCurrentBalance(theBal?.toString());
           setAddingBalance("");
           setOpenAddBalance(false);
@@ -107,7 +110,7 @@ function Dashboard() {
           setTimeout(() => {
             setShowNotif(false);
           }, 0);
-        } catch(e) {
+        } catch (e) {
           Swal.fire({
             title: "Error!",
             text: "Error!",
@@ -116,7 +119,7 @@ function Dashboard() {
           setConfirmLoading(false);
         }
       });
-    } catch(e) {
+    } catch (e) {
       Swal.fire({
         title: "Error!",
         text: "Error!",
@@ -129,7 +132,7 @@ function Dashboard() {
   const handleAddBalanceCancel = () => {
     setOpenAddBalance(false);
     setConfirmLoading(false);
-  }
+  };
 
   const handleCancel = () => {
     setIsModalOpen(false);
@@ -197,8 +200,8 @@ function Dashboard() {
   useEffect(() => {
     if (showNotif) {
       notification.success({
-        message: 'Success!',
-        description: 'You have successfully added your balance!',
+        message: "Success!",
+        description: "You have successfully added your balance!",
       });
     }
   }, [showNotif]);
@@ -224,26 +227,29 @@ function Dashboard() {
               >
                 Logout
               </button>
-              {theRole === "Company" && <button
-                onClick={async () => {
-                  setOpenAddBalance(true);
-                }}
-                className="submit-button margin-bot"
-              >
-                Add Balance
-              </button>}
-              <p className="text-white text-center margin-bot">
-                Total Balance = {formatCurrency(currentBalance ?? "0")} IDR
-              </p>
-              <p className="text-white text-center margin-bot">
-                1 ICP = {formatCurrency(currentICPPrice?.toFixed(2))} IDR
-              </p>
+              {theRole === "Company" && (
+                <button
+                  onClick={async () => {
+                    setOpenAddBalance(true);
+                  }}
+                  className="submit-button margin-bot"
+                >
+                  Add Balance
+                </button>
+              )}
               <p className="text-white text-center margin-bot">
                 Welcome to JASR Blockchain Dashboard
               </p>
               <p className="text-white text-center margin-bot">
                 Your Petty Cash Summary
               </p>
+              <p className="text-white text-center margin-bot">
+                Total Balance = {formatCurrency(currentBalance ?? "0")} IDR
+              </p>
+              <p className="text-white text-center margin-bot">
+                1 ICP = {formatCurrency(currentICPPrice?.toFixed(2))} IDR
+              </p>
+
               <p className="text-white text-center margin-bot">
                 Identity: {islog}
               </p>
@@ -371,7 +377,10 @@ function Dashboard() {
                               "0"
                             );
                             const date = String(now.getDate()).padStart(2, "0");
-                            const hours = String(now.getHours()).padStart(2, "0");
+                            const hours = String(now.getHours()).padStart(
+                              2,
+                              "0"
+                            );
                             const minutes = String(now.getMinutes()).padStart(
                               2,
                               "0"
@@ -380,7 +389,7 @@ function Dashboard() {
                               2,
                               "0"
                             );
-  
+
                             const formattedDateTime = `${year}-${month}-${date} ${hours}:${minutes}:${seconds}`;
                             const finalResult = await result.addTransaction(
                               currentPrincipal,
@@ -402,7 +411,7 @@ function Dashboard() {
                             setTransactionsResult(transactions);
                             const theBalance = await result.getBalance();
                             setCurrentBalance(theBalance?.toString());
-                          } catch(e) {
+                          } catch (e) {
                             Swal.fire({
                               title: "Error!",
                               text: "Insufficient balance!",
@@ -468,13 +477,17 @@ function Dashboard() {
         confirmLoading={confirmLoading}
         onCancel={handleAddBalanceCancel}
       >
-        <Input value={addingBalance} onChange={(e) => {
-          const filteredValue = e.target.value
-            .split("")
-            .filter((char) => numberStrings.includes(char))
-            .join("");
-          setAddingBalance(filteredValue);
-        }} placeholder="Input amount" />
+        <Input
+          value={addingBalance}
+          onChange={(e) => {
+            const filteredValue = e.target.value
+              .split("")
+              .filter((char) => numberStrings.includes(char))
+              .join("");
+            setAddingBalance(filteredValue);
+          }}
+          placeholder="Input amount"
+        />
       </Modal>
     </main>
   );
