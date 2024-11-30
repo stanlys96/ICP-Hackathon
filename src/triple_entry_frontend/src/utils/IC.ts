@@ -58,7 +58,7 @@ class IC {
   }
 
   public static defaultAuthOption: AuthClientLoginOptions = {
-    identityProvider: "http://cgpjn-omaaa-aaaaa-qaakq-cai.localhost:4943",
+    identityProvider: `http://${process.env.CANISTER_ID_INTERNET_IDENTITY}.localhost:4943`,
     windowOpenerFeatures:
       "toolbar=0,location=0,menubar=0,width=500,height=500,left=100,top=100",
     maxTimeToLive: BigInt(7 * 24 * 60 * 60 * 1000 * 1000 * 1000),
