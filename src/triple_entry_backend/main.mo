@@ -19,6 +19,7 @@ actor {
   private stable var principalEntries : [Principal] = [];
   var counter : Nat = 0;
   var balance: Int = 0;
+  var expenses: Int = 0;
 
   private var principals = HashMap.HashMap<Principal, Bool>(
     10,
@@ -91,6 +92,7 @@ actor {
       throw Error.reject("Sender and receiver cannot be the same!");
     };
     balance -= value;
+    expenses += value;
     counter += 1;
     let newTransaction : Transaction = {
       sender = sender;
@@ -126,5 +128,9 @@ actor {
 
   public query func getBalance() : async Int {
     return balance;
-  }
+  };
+
+  public query func getExpenses() : async Int {
+    return expenses;
+  };
 };

@@ -56,13 +56,17 @@ button[type="submit"] {
   display: none;
 }
 
-.the-body {
-  background-color: #131315;
-  height: 100vh;
+.loader-container {
   display: flex;
   justify-content: center;
   align-items: center;
-  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+}
+
+.the-body {
+  background-color: #f3f5ff;
+  min-height: 100vh;
 }
 
 .the-button {
@@ -94,7 +98,7 @@ button[type="submit"] {
   justify-content: center;
   align-items: center;
   flex-direction: column;
-  width: 50vw;
+  width: 100vw;
 }
 
 .radio-group {
@@ -134,9 +138,7 @@ button[type="submit"] {
   background-color: #f0f0f0;
   border: 2px solid #ddd;
   border-radius: 50%;
-  transition:
-    background-color 0.3s,
-    border-color 0.3s;
+  transition: background-color 0.3s, border-color 0.3s;
 }
 
 .radio-label.selected .custom-radio {
@@ -167,7 +169,7 @@ button[type="submit"] {
 }
 
 .transaction {
-  background-color: #1a1e21;
+  background-color: #f3f5ff;
   height: 100vh;
   width: 100vw;
   display: flex;
@@ -263,4 +265,51 @@ button[type="submit"] {
 
 .margin-mini-bottom {
   margin-bottom: 10px;
+}
+
+.sidebar {
+  min-height: 100vh;
+  background-color: #fff;
+  width: 20vw;
+  display: flex;
+  flex-direction: column;
+}
+
+.row-entry {
+  padding: 15px;
+  margin-right: 15px;
+  border-top-right-radius: 10px;
+  border-bottom-right-radius: 10px;
+}
+
+.gradient-container {
+  background: linear-gradient(to left, #4565a6, #103580);
+}
+
+.border-top-only {
+  border-top-right-radius: 10px;
+  border-top-left-radius: 10px;
+}
+
+.no-focus {
+  outline: none;
+}
+
+:focus {
+  box-shadow: 0 0 2px 2px rgba(0, 123, 255, 0.6); /* Custom focus indicator */
+}
+
+.custom-table .ant-table {
+  border-top-left-radius: 0 !important;
+  border-top-right-radius: 0 !important;
+}
+
+.input-select {
+  outline: none;
+  background: #ffffff;
+  border-width: 1px;
+  border-style: solid;
+  border-color: #d9d9d9;
+  padding: 4px 11px;
+  border-radius: 6px;
 }

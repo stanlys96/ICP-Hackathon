@@ -1,14 +1,48 @@
 import React, { useEffect, useState, useMemo } from "react";
 import IC from "./utils/IC";
 import { useNavigate } from "react-router-dom";
+import { icp2 } from "./assets";
 import { Modal, Table } from "antd";
 import ClipLoader from "react-spinners/ClipLoader";
 import BeatLoader from "react-spinners/BeatLoader";
 import Swal from "sweetalert2";
-import { DatePicker, Input, notification } from "antd";
+import { DatePicker, Input, notification, Layout, Radio, Space, Select } from "antd";
+import {
+  DesktopOutlined,
+  PieChartOutlined,
+  HomeOutlined,
+  TransactionOutlined,
+  LogoutOutlined,
+  RetweetOutlined,
+  MoneyCollectOutlined,
+  PayCircleOutlined,
+  FilterOutlined
+} from '@ant-design/icons';
 import "./index.scss";
 
+const { Header, Content, Footer, Sider } = Layout;
+
 const { RangePicker } = DatePicker;
+
+function getItem(
+  label,
+  key,
+  icon,
+  children,
+) {
+  return {
+    key,
+    icon,
+    children,
+    label,
+  };
+}
+
+const items = [
+  getItem('Option 1', '1', <PieChartOutlined />),
+  getItem('Option 2', '2', <DesktopOutlined />),
+];
+
 
 function formatCurrency(value, currencyCode = "USD", locale = "en-US") {
   return new Intl.NumberFormat(locale, {
@@ -38,6 +72,12 @@ function Dashboard() {
   const [currentBalance, setCurrentBalance] = useState("");
   const [addingBalance, setAddingBalance] = useState("");
   const [showNotif, setShowNotif] = useState(false);
+  const [theRecipient, setTheRecipient] = useState("");
+  const [filterDay, setFilterDay] = useState(-1);
+  const [filterModal, setFilterModal] = useState(false);
+  const [transactionModal, setTransactionModal] = useState(false);
+  const [expenses, setExpenses] = useState("");
+
   const columns = [
     {
       title: "Transaction ID",
@@ -56,6 +96,12 @@ function Dashboard() {
       dataIndex: "receiver",
       key: "receiver",
       render: (receiver) => receiver.toText().slice(0, 15) + "...",
+    },
+    {
+      title: "Status",
+      dataIndex: "status",
+      key: "status",
+      render: () => <p className="text-[#00CE07]">Verified</p>,
     },
     {
       title: "Timestamp",
@@ -79,6 +125,91 @@ function Dashboard() {
   const showModal = () => {
     setIsModalOpen(true);
   };
+  const handleFilterModalOk = () => {
+    setFilterModal(false);
+  }
+  const handleFilterModalCancel = () => {
+    setFilterModal(false);
+  }
+  const handleTransactionModalOk = () => {
+    if (!destination || !amount || !description) {
+      return Swal.fire({
+        title: "Fill the values!",
+        text: "Please fill in all the inputs!",
+        icon: "info",
+      });
+    }
+    if (parseInt(amount) === 0) {
+      return Swal.fire({
+        title: "Amount info!",
+        text: "Amount cannot be zero!",
+        icon: "info",
+      });
+    }
+    setTransactionLoading(true);
+    IC.getBackend(async (result) => {
+      try {
+        const destinationPrincipal = principals?.find(
+          (thePrincipal) =>
+            thePrincipal?.principalText === destination
+        )?.principal;
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(
+          2,
+          "0"
+        );
+        const date = String(now.getDate()).padStart(2, "0");
+        const hours = String(now.getHours()).padStart(
+          2,
+          "0"
+        );
+        const minutes = String(now.getMinutes()).padStart(
+          2,
+          "0"
+        );
+        const seconds = String(now.getSeconds()).padStart(
+          2,
+          "0"
+        );
+
+        const formattedDateTime = `${year}-${month}-${date} ${hours}:${minutes}:${seconds}`;
+        const finalResult = await result.addTransaction(
+          currentPrincipal,
+          destinationPrincipal,
+          parseInt(amount),
+          description,
+          formattedDateTime
+        );
+        setAmount("");
+        setDescription("");
+        setDestination("");
+        setTransactionLoading(false);
+        Swal.fire({
+          title: "Success!",
+          text: "Successfully created the transaction!",
+          icon: "success",
+        });
+        const transactions = await result.getTransactions();
+        setTransactionsResult(transactions);
+        const theBalance = await result.getBalance();
+        setCurrentBalance(theBalance?.toString());
+        const theExpenses = await result.getExpenses();
+        setExpenses(theExpenses?.toString());
+        setTransactionModal(false);
+      } catch (e) {
+        Swal.fire({
+          title: "Error!",
+          text: "Insufficient balance!",
+          icon: "error",
+        });
+        setTransactionLoading(false);
+      }
+    });
+  }
+  const handleTransactionModalCancel = () => {
+    setTransactionModal(false);
+  }
   const handleOk = () => {
     IC.getAuth(async (authClient) => {
       const result = await authClient.logout();
@@ -107,6 +238,8 @@ function Dashboard() {
           setOpenAddBalance(false);
           setShowNotif(true);
           setConfirmLoading(false);
+          const theExpenses = await result.getExpenses();
+          setExpenses(theExpenses?.toString());
           setTimeout(() => {
             setShowNotif(false);
           }, 0);
@@ -141,17 +274,29 @@ function Dashboard() {
   const onOk = (value) => {
     setDateRange(value);
   };
-
-  function filterDataByTimestamp(data) {
-    if (dateRange.length > 1 && dateRange?.[0] && dateRange?.[1]) {
-      const [startDate, endDate] = dateRange.map((date) => new Date(date));
-
-      return data.filter((item) => {
-        const currentDate = new Date(item.timestamp);
-        return currentDate >= startDate && currentDate <= endDate;
-      });
+  
+  function filterBasedOnDays(data) {
+    if (filterDay !== -1) {
+      const now = new Date();
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(now.getDate() - filterDay);
+      if (theRecipient) {
+        return data.filter(item => item?.receiver?.toText()?.toLowerCase().includes(theRecipient?.toLowerCase())).filter(item => {
+          const currentDate = new Date(item.timestamp);
+          return currentDate >= sevenDaysAgo && currentDate <= now;
+        });   
+      } else {
+        return data.filter(item => {
+          const currentDate = new Date(item.timestamp);
+          return currentDate >= sevenDaysAgo && currentDate <= now;
+        });   
+      }
     } else {
-      return data;
+      if (theRecipient) {
+        return data.filter(item => item?.receiver?.toText()?.toLowerCase().includes(theRecipient?.toLowerCase()));
+      } else {
+        return data;
+      }
     }
   }
 
@@ -175,6 +320,8 @@ function Dashboard() {
         );
         const theBalance = await result.getBalance();
         setCurrentBalance(theBalance?.toString());
+        const theExpenses = await result.getExpenses();
+        setExpenses(theExpenses?.toString());
         const getPrincipals = await result.getAllPrincipals();
         const uniqueData = getPrincipals.filter(
           (item, index, self) =>
@@ -207,227 +354,129 @@ function Dashboard() {
   }, [showNotif]);
   return (
     <main className="the-body">
+      <div>
       {loading ? (
-        <ClipLoader
-          color={"#FFFFFF"}
-          loading={loading}
-          size={50}
-          aria-label="Loading Spinner"
-          data-testid="loader"
-        />
+        <div className="text-black loader-container">
+          <ClipLoader
+            color={"#000000"}
+            loading={loading}
+            size={50}
+            aria-label="Loading Spinner"
+            data-testid="loader"
+          />
+        </div>
       ) : (
-        <div>
+        <div className="flex gap-x-2 flex-1">
+          <div className="flex flex-col sidebar gap-y-2">
+            <p className="text-black p-[15px] font-bold text-[24px]">Triple Entry</p>
+            <div onClick={() => setMode("dashboard")} className={`row-entry flex gap-x-2 ${mode === "dashboard" ? "text-white bg-[#103580]" : "text-black bg-[#FFFFFF]"} cursor-pointer`}>
+              <HomeOutlined />
+              <p>Dashboard</p>
+            </div>
+            <div onClick={() => setMode("transaction")} className={`row-entry flex gap-x-2 ${mode === "transaction" ? "text-white bg-[#103580]" : "text-black bg-[#FFFFFF]"} cursor-pointer`}>
+              <TransactionOutlined />
+              <p>Transactions</p>
+            </div>
+          </div>
           {mode === "dashboard" && (
             <div className="container">
-              <button
-                onClick={async () => {
-                  showModal(true);
-                }}
-                className="the-button margin-bot"
-              >
-                Logout
-              </button>
-              {theRole === "Company" && (
-                <button
-                  onClick={async () => {
-                    setOpenAddBalance(true);
-                  }}
-                  className="submit-button margin-bot"
-                >
-                  Add Balance
-                </button>
-              )}
-              <p className="text-white text-center margin-bot">
-                Welcome to JASR Blockchain Dashboard
-              </p>
-              <p className="text-white text-center margin-bot">
-                Your Petty Cash Summary
-              </p>
-              <p className="text-white text-center margin-bot">
-                Total Balance = {formatCurrency(currentBalance ?? "0")} IDR
-              </p>
-              <p className="text-white text-center margin-bot">
-                1 ICP = {formatCurrency(currentICPPrice?.toFixed(2))} IDR
-              </p>
-
-              <p className="text-white text-center margin-bot">
-                Identity: {islog}
-              </p>
-              <p className="text-white text-center margin-bot">
-                Role: {theRole}
-              </p>
-              <div className="center-all gap-flex">
-                <button
-                  onClick={async () => {
-                    setMode("transaction-history");
-                  }}
-                  className="the-button margin-bot"
-                >
-                  Transaction History
-                </button>
-                <button
-                  onClick={async () => {
-                    setMode("transaction");
-                  }}
-                  className="submit-button margin-bot"
-                >
-                  Add New Transaction
-                </button>
+              <div className="flex justify-between items-center w-full mt-[15px]">
+                <p className="text-black text-[24px]">Dashboard</p>
+                <div className="flex gap-x-2">
+                  <button onClick={() => showModal(true)} className="bg-[#103580] flex items-center gap-x-2 py-[10px] px-[20px] rounded-[10px]">
+                    <LogoutOutlined />Log Out
+                  </button>
+                  <button className="border border-[#103580] bg-white text-black flex items-center gap-x-2 py-[10px] px-[20px] rounded-[10px]">
+                    <RetweetOutlined />Refresh
+                  </button>
+                </div>
               </div>
+              <div className="grid grid-cols-3 w-full gap-[15px] my-[20px]">
+                <div className="gradient-container flex flex-col gap-y-3 rounded-[10px] px-[15px] py-[30px]">
+                  <p className="text-white"><MoneyCollectOutlined /> Balance</p>
+                  <p className="text-white text-[24px]">Rp {formatCurrency(currentBalance ?? "0")}</p>
+                </div>
+                <div className="flex flex-col bg-white border border-[#00000025] gap-y-3 rounded-[10px] px-[15px] py-[30px]">
+                  <p className="text-black"><PayCircleOutlined /> Today's Expenses</p>
+                  <p className="text-black text-[24px]">Rp {formatCurrency(expenses ?? "0")}</p>
+                </div>
+                <div className="flex bg-white border border-[#00000025] flex-col justify-start items-center gap-y-3 rounded-[10px] px-[15px] py-[30px]">
+                  <div className="flex gap-x-2 items-center">
+                    <img className="w-[55px] h-[39px]" src={icp2} />
+                    <p className="text-black"> Convert Currency</p>
+                  </div>
+                  <p className="text-black text-[24px]">1 ICP = Rp {formatCurrency(currentICPPrice?.toFixed(2))}</p>
+                </div>
+              </div>
+              <div className="gradient-container flex flex-col gap-y-5 rounded-[10px] px-[15px] py-[25px] mb-[20px]">
+                <img className="w-[55px] h-[39px]" src={icp2} />
+                <div className="bg-white flex flex-col gap-y-2 border border-[#00000025] rounded-[10px] p-[10px]">
+                  <div>
+                    <p className="text-black">Address</p>
+                    <p className="text-black">{islog}</p>
+                  </div>
+                  <div>
+                    <p className="text-black">Role</p>
+                    <p className="text-black">{theRole}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="w-full bg-white border-top-only px-[15px] py-[10px] flex justify-between items-center">
+                <p className="text-black font-bold text-[20px]">Transactions History</p>
+                <div className="flex gap-x-2 items-center">
+                  <div onClick={() => setFilterModal(true)} className="text-black flex gap-x-2 items-center cursor-pointer rounded-[10px] border border-[#00000025] p-[10px]">
+                    <FilterOutlined />
+                    <p>Filter</p>
+                  </div>
+                  <input value={theRecipient} onChange={(e) => setTheRecipient(e.target.value)} type="text" className="bg-[#F5F5F5] text-black no-focus rounded-[10px] p-[10px]" placeholder="Search by recipient" />
+                </div>
+              </div>
+              <Table
+                className="w-full custom-table"
+                dataSource={filterBasedOnDays(transactionsResult)}
+                columns={columns}
+                style={{
+                  borderTopLeftRadius: 0,
+                  borderTopRightRadius: 0,
+                }}
+              />
             </div>
           )}
           {mode === "transaction" && (
-            <div className="transaction">
-              <p className="text-white text-center margin-bot">Transaction</p>
-              <p className="text-white text-center brown-color">
-                Enter a Blockchain or Transaction/ Origin Walet Wallet address
-              </p>
-              <p className="text-white text-center margin-bot brown-color">
-                Validating a transaction- Ensure Blockchain Address format is
-                Correct to prevent errors.
-              </p>
-              <div className="input-master">
-                <div className="input-container">
-                  <label className="text-white">From Wallet Address</label>
-                  <input value={islog} disabled className="disabled-inputy" />
+            <div className="container">
+              <div className="flex justify-between items-center w-full mt-[15px]">
+                <p className="text-black text-[24px]">Transactions</p>
+                <div className="flex gap-x-2">
+                  {theRole === "Company" && <button onClick={() => setOpenAddBalance(true)} className="border border-[#103580] bg-white text-black flex items-center gap-x-2 py-[10px] px-[20px] rounded-[10px]">
+                    <RetweetOutlined />Add Balance
+                  </button>}
+                  <button onClick={() => setTransactionModal(true)} className="bg-[#103580] flex items-center gap-x-2 py-[10px] px-[20px] rounded-[10px]">
+                    <LogoutOutlined />New Transaction
+                  </button>
+                  <button className="border border-[#103580] bg-white text-black flex items-center gap-x-2 py-[10px] px-[20px] rounded-[10px]">
+                    <RetweetOutlined />Refresh
+                  </button>
                 </div>
-                <div className="input-container">
-                  <label className="text-white">To Wallet Address</label>
-                  <select
-                    value={destination}
-                    onChange={(e) => setDestination(e.target.value)}
-                    className="inputy"
-                    id="dropdown"
-                    name="options"
-                  >
-                    <option>Select destination</option>
-                    {principals?.map(
-                      (principal) =>
-                        islog !== principal?.principalText && (
-                          <option value={principal?.principal}>
-                            {principal?.principalText?.slice(0, 25) + "..."} -{" "}
-                            {principal?.role}
-                          </option>
-                        )
-                    )}
-                  </select>
-                </div>
-                <div className="input-container">
-                  <label className="text-white">Amount</label>
-                  <input
-                    value={amount}
-                    onChange={(e) => {
-                      let currentValue = e.target.value;
-                      const filteredValue = currentValue
-                        .split("")
-                        .filter((char) => numberStrings.includes(char))
-                        .join("");
-                      setAmount(filteredValue);
-                    }}
-                    className="inputy"
-                  />
-                </div>
-                <div className="input-container">
-                  <label className="text-white">Description</label>
-                  <input
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    className="inputy"
-                  />
-                </div>
-                {transactionLoading ? (
-                  <div className="center-all">
-                    <BeatLoader color={"#FFFFFF"} size={30} />
-                  </div>
-                ) : (
-                  <div className="button-container">
-                    <button
-                      onClick={() => setMode("dashboard")}
-                      className="the-button"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (!destination || !amount || !description) {
-                          return Swal.fire({
-                            title: "Fill the values!",
-                            text: "Please fill in all the inputs!",
-                            icon: "info",
-                          });
-                        }
-                        if (parseInt(amount) === 0) {
-                          return Swal.fire({
-                            title: "Amount info!",
-                            text: "Amount cannot be zero!",
-                            icon: "info",
-                          });
-                        }
-                        setTransactionLoading(true);
-                        IC.getBackend(async (result) => {
-                          try {
-                            const destinationPrincipal = principals?.find(
-                              (thePrincipal) =>
-                                thePrincipal?.principalText === destination
-                            )?.principal;
-                            const now = new Date();
-                            const year = now.getFullYear();
-                            const month = String(now.getMonth() + 1).padStart(
-                              2,
-                              "0"
-                            );
-                            const date = String(now.getDate()).padStart(2, "0");
-                            const hours = String(now.getHours()).padStart(
-                              2,
-                              "0"
-                            );
-                            const minutes = String(now.getMinutes()).padStart(
-                              2,
-                              "0"
-                            );
-                            const seconds = String(now.getSeconds()).padStart(
-                              2,
-                              "0"
-                            );
-
-                            const formattedDateTime = `${year}-${month}-${date} ${hours}:${minutes}:${seconds}`;
-                            const finalResult = await result.addTransaction(
-                              currentPrincipal,
-                              destinationPrincipal,
-                              parseInt(amount),
-                              description,
-                              formattedDateTime
-                            );
-                            setAmount("");
-                            setDescription("");
-                            setDestination("");
-                            setTransactionLoading(false);
-                            Swal.fire({
-                              title: "Success!",
-                              text: "Successfully created the transaction!",
-                              icon: "success",
-                            });
-                            const transactions = await result.getTransactions();
-                            setTransactionsResult(transactions);
-                            const theBalance = await result.getBalance();
-                            setCurrentBalance(theBalance?.toString());
-                          } catch (e) {
-                            Swal.fire({
-                              title: "Error!",
-                              text: "Insufficient balance!",
-                              icon: "error",
-                            });
-                            setTransactionLoading(false);
-                          }
-                        });
-                      }}
-                      className="submit-button"
-                    >
-                      Submit
-                    </button>
-                  </div>
-                )}
               </div>
+              <div className="w-full bg-white border-top-only px-[15px] py-[10px] flex justify-between items-center mt-[20px]">
+                <p className="text-black font-bold text-[20px]">Transactions History</p>
+                <div className="flex gap-x-2 items-center">
+                  <div onClick={() => setFilterModal(true)} className="text-black flex gap-x-2 items-center cursor-pointer rounded-[10px] border border-[#00000025] p-[10px]">
+                    <FilterOutlined />
+                    <p>Filter</p>
+                  </div>
+                  <input value={theRecipient} onChange={(e) => setTheRecipient(e.target.value)} type="text" className="bg-[#F5F5F5] text-black no-focus rounded-[10px] p-[10px]" placeholder="Search by recipient" />
+                </div>
+              </div>
+              <Table
+                className="w-full custom-table"
+                dataSource={filterBasedOnDays(transactionsResult)}
+                columns={columns}
+                style={{
+                  borderTopLeftRadius: 0,
+                  borderTopRightRadius: 0,
+                }}
+              />
             </div>
           )}
           {mode === "transaction-history" && (
@@ -443,8 +492,11 @@ function Dashboard() {
                 className="range-picker"
                 onOk={onOk}
               />
+              <div className="w-full">
+                <p>Transactions History</p>
+              </div>
               <Table
-                dataSource={filterDataByTimestamp(transactionsResult)}
+                dataSource={filterBasedOnDays(transactionsResult)}
                 columns={columns}
               />
               <button
@@ -471,6 +523,24 @@ function Dashboard() {
         <p>Are you sure you want to logout?</p>
       </Modal>
       <Modal
+        title="Filter"
+        open={filterModal}
+        onOk={handleFilterModalOk}
+        onCancel={handleFilterModalCancel}
+        okText="Yes"
+        cancelText="No"
+      >
+        <Radio.Group onChange={(e) => setFilterDay(e.target.value)} value={filterDay}>
+          <Space direction="vertical">
+            <Radio value={-1}>None</Radio>
+            <Radio value={1}>Last 1 day</Radio>
+            <Radio value={7}>Last 7 days</Radio>
+            <Radio value={30}>Last 30 days</Radio>
+            <Radio value={365}>Last 365 days</Radio>
+          </Space>
+        </Radio.Group>
+      </Modal>
+      <Modal
         title="Add Balance"
         open={openAddBalance}
         onOk={handleAddBalanceOk}
@@ -489,6 +559,53 @@ function Dashboard() {
           placeholder="Input amount"
         />
       </Modal>
+      <Modal
+        title="Transaction"
+        open={transactionModal}
+        confirmLoading={transactionLoading}
+        onOk={handleTransactionModalOk}
+        onCancel={handleTransactionModalCancel}
+        okText="Yes"
+        cancelText="No"
+      >
+        <div className="flex flex-col gap-y-2">
+          <p>Sender</p>
+          <Input value={islog} disabled />
+          <p>Recipient</p>
+          <select
+            value={destination}
+            onChange={(e) => setDestination(e.target.value)}
+            className="input-select"
+            id="dropdown"
+            name="options"
+          >
+            <option>Select destination</option>
+            {principals?.map(
+              (principal) =>
+                islog !== principal?.principalText && (
+                  <option value={principal?.principal}>
+                    {principal?.principalText?.slice(0, 25) + "..."} -{" "}
+                    {principal?.role}
+                  </option>
+                )
+            )}
+          </select>
+          <p>Amount</p>
+          <Input value={amount}                     
+            onChange={(e) => {
+              let currentValue = e.target.value;
+              const filteredValue = currentValue
+                .split("")
+                .filter((char) => numberStrings.includes(char))
+                .join("");
+              setAmount(filteredValue);
+            }} 
+          />
+          <p>Description</p>
+          <Input value={description} onChange={(e) => setDescription(e.target.value)} />
+        </div>
+      </Modal>
+      </div>
     </main>
   );
 }

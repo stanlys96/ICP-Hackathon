@@ -51,22 +51,24 @@ function Role() {
   return (
     <div className="the-body">
       {loading ? (
-        <ClipLoader
-          color={"#FFFFFF"}
-          loading={loading}
-          size={50}
-          aria-label="Loading Spinner"
-          data-testid="loader"
-        />
+        <div className="text-black loader-container">
+          <ClipLoader
+            color={"#000000"}
+            loading={loading}
+            size={50}
+            aria-label="Loading Spinner"
+            data-testid="loader"
+          />
+        </div>
       ) : (
-        <div className="the-body">
-          <p className="text-white margin-bot">Identity: {whoami}</p>
-          <p className="text-white">Choose your role:</p>
+        <div className="flex justify-center flex-col h-[100vh] w-[100vw] items-center">
+          <p className="text-black margin-bot text-[24px]">Identity: {whoami}</p>
+          <p className="text-black text-[20px]">Choose your role:</p>
           <div className="radio-group">
             {rolesData?.map((option) => (
               <label
                 key={option}
-                className={`radio-label ${
+                className={`radio-label text-black ${
                   selected === option ? "selected" : ""
                 }`}
               >
@@ -75,14 +77,15 @@ function Role() {
                   value={option}
                   checked={selected === option}
                   onChange={handleChange}
+                  className="text-black"
                 />
-                <span className="custom-radio"></span>
+                <span className="custom-radio text-black"></span>
                 {option.charAt(0).toUpperCase() + option.slice(1)}
               </label>
             ))}
           </div>
           {confirmLoading ? (
-            <BeatLoader color={"#FFFFFF"} size={30} />
+            <BeatLoader color={"#000000"} size={30} />
           ) : (
             <button
               onClick={async () => {
@@ -100,7 +103,7 @@ function Role() {
                   setConfirmLoading(false);
                 });
               }}
-              className="submit-button"
+               className="bg-[#103580] flex items-center gap-x-2 py-[20px] px-[100px] rounded-[10px]"
             >
               Submit
             </button>
