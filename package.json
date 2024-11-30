@@ -19,6 +19,7 @@
     "@dfinity/agent": "^2.1.3",
     "@dfinity/auth-client": "^2.1.3",
     "@dfinity/principal": "^2.1.3",
+    "@esbuild/linux-x64": "^0.24.0",
     "antd": "^5.22.2",
     "axios": "^1.7.8",
     "react-router-dom": "^7.0.1",
